@@ -37,7 +37,9 @@ public class ChatServer {
             try {
                 Socket clientsocket = serverSocket.accept();
                 System.out.println("Client connected to server: " + clientsocket.getInetAddress().getHostAddress());
-                clientsocket.close();
+
+                ClientHandler clientHandler = new ClientHandler(clientsocket);
+                clientThreadPool.submit(clientHandler);
             }
             catch (IOException e) {
                 if (isRunning) {
