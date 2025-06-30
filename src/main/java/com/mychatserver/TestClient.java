@@ -11,7 +11,7 @@ public class TestClient {
 
     public static void main(String[] args) {
         String serverAddress = "localhost";
-        String userInput;
+        String userInput1, userInput2;
         String serverResponse;
         int serverPort = 8000;
 
@@ -23,28 +23,36 @@ public class TestClient {
             System.out.println("TestClient: Connected to the server!");
 
             String welcomeMessage = in.readLine();
-            if  (welcomeMessage != null) {
+            if (welcomeMessage != null) {
                 System.out.println("Server: " + welcomeMessage);
             }
 
+            userInput1 = consoleInput.nextLine();
+            out.println(userInput1);
+
             while (true) {
-                System.out.println("You are?: ");
-                userInput = consoleInput.nextLine();
-                if ("exit".equalsIgnoreCase(userInput)) {
+                System.out.println("Enter the target Users ID (or 'exit' to quit) : ");
+                userInput1 = consoleInput.nextLine();
+                if ("exit".equalsIgnoreCase(userInput1)) {
                     System.out.println("Exiting");
                     break;
                 }
-                out.println(userInput);
-                serverResponse = in.readLine();
-
-                if (serverResponse != null) {
-                    System.out.println("Server: " + serverResponse);
-                } else {
-                    System.out.println("Server disconnected");
+                else {
+                    System.out.println("Enter message: ");
+                    userInput2 = consoleInput.nextLine();
+                    out.println(userInput1 + ":" + userInput2);
+                    serverResponse = in.readLine();
+                    if (serverResponse != null) {
+                        System.out.println("Server: " + serverResponse);
+                    } else {
+                        System.out.println("Server disconnected");
+                    }
                 }
+
+
+
             }
-        }
-        catch (IOException e) {
+        } catch (IOException e) {
             System.err.println("TestClient: Could not connect to server: " + e.getMessage());
             e.printStackTrace();
         }

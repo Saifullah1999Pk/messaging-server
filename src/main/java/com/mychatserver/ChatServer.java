@@ -1,8 +1,11 @@
 package com.mychatserver;
 
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.net.Socket;
 import java.net.ServerSocket;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -11,9 +14,34 @@ public class ChatServer {
     private volatile boolean isRunning = true;
     private ServerSocket serverSocket;
     private ExecutorService clientThreadPool;
-
+    private final Map<String, ClientConnectionDetails> connectedClients;
     public ChatServer(int port){
         this.port = port;
+        this.connectedClients = new ConcurrentHashMap<>();
+    }
+
+    public void registerClient(String userID, PrintWriter out){
+        ClientConnectionDetails clientDetails = new ClientConnectionDetails(userID, out);
+        connectedClients.put(userID,clientDetails);
+        System.out.println("User " + userID + " registered. Total clients: " + connectedClients.size());
+    }
+
+    public void deregisterClient(String userID){
+        connectedClients.remove(userID);
+        System.out.println("User " + userID + " deregistered. Total clients: " + connectedClients.size());
+    }
+
+    public void sendMessage(String senderUserID, String targetUserID, String messageContent, PrintWriter senderOut){
+        ClientConnectionDetails targetClientDetails = connectedClients.get(targetUserID);
+        if (targetClientDetails != null){
+            PrintWriter recipientOut = targetClientDetails.getPrintWriter();
+            recipientOut.println(senderUserID + ":" + messageContent);
+            System.out.println("Server: Message from " + senderUserID + " forwarded to " + targetUserID);
+        }
+        else {
+            senderOut.println("Error: User '" + targetUserID + "' not found or offline.");
+            System.out.println("Server: Failed to forward message from " + senderUserID + " to " + targetUserID + " (user offline/not found).");
+        }
     }
     public static void main(String[] args) {
 
@@ -38,7 +66,7 @@ public class ChatServer {
                 Socket clientsocket = serverSocket.accept();
                 System.out.println("Client connected to server: " + clientsocket.getInetAddress().getHostAddress());
 
-                ClientHandler clientHandler = new ClientHandler(clientsocket);
+                ClientHandler clientHandler = new ClientHandler(clientsocket, this);
                 clientThreadPool.submit(clientHandler);
             }
             catch (IOException e) {
@@ -52,6 +80,3 @@ public class ChatServer {
         }
     }
 }
-
-
-
