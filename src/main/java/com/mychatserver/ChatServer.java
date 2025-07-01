@@ -5,19 +5,24 @@ import java.io.PrintWriter;
 import java.net.Socket;
 import java.net.ServerSocket;
 import java.util.Map;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public class ChatServer {
+
     private final int port;
     private volatile boolean isRunning = true;
     private ServerSocket serverSocket;
     private ExecutorService clientThreadPool;
     private final Map<String, ClientConnectionDetails> connectedClients;
+    private final Map<String, ConcurrentLinkedQueue<String>> offlineMessages;
+
     public ChatServer(int port){
         this.port = port;
         this.connectedClients = new ConcurrentHashMap<>();
+        this.offlineMessages = new ConcurrentHashMap<>();
     }
 
     public void registerClient(String userID, PrintWriter out){
@@ -39,8 +44,27 @@ public class ChatServer {
             System.out.println("Server: Message from " + senderUserID + " forwarded to " + targetUserID);
         }
         else {
-            senderOut.println("Error: User '" + targetUserID + "' not found or offline.");
-            System.out.println("Server: Failed to forward message from " + senderUserID + " to " + targetUserID + " (user offline/not found).");
+            ConcurrentLinkedQueue<String> userQueue = offlineMessages.computeIfAbsent(targetUserID, k -> new ConcurrentLinkedQueue<>());
+            userQueue.add(senderUserID + ":" + messageContent);
+            System.out.println("Server: User '" + targetUserID + "' is offline. Message from '" + senderUserID + "' queued.");
+            senderOut.println("Info: User '" + targetUserID + "' is offline. Message queued for delivery.");
+        }
+    }
+
+    public void deliverOfflineMessages(String userID, PrintWriter clientOut){
+        ConcurrentLinkedQueue<String> userQueue = offlineMessages.remove(userID);
+        if (userQueue != null && !userQueue.isEmpty()){
+            System.out.println("Server: Delivering queued messages to " + userID);
+            int deliverCount = 0;
+            String queuedMessage;
+
+            while ((queuedMessage = userQueue.poll()) != null){
+                clientOut.println("Queued Message (from server): " + queuedMessage);
+                deliverCount++;
+            }
+            System.out.println("Server: Delivered " + deliverCount + " queued messages to " + userID + ".");
+        } else {
+            System.out.println("Server: No offline messages for " + userID + ".");
         }
     }
     public static void main(String[] args) {

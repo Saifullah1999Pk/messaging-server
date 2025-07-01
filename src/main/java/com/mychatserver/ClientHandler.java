@@ -21,6 +21,7 @@ public class ClientHandler implements Runnable {
     }
 
     public void run() {
+
         String userID = null;
         String targetUserID = null;
         System.out.println("ClientHandler thread started for " + clientAddress + ".");
@@ -39,11 +40,13 @@ public class ClientHandler implements Runnable {
                 return; // Exit the run method, causing cleanup in finally block
             }
 
-            System.out.println("User " + userID + " connected from " + clientAddress);
             chatServer.registerClient(userID, out);
+            chatServer.deliverOfflineMessages(userID, out);
+
 
             String clientMessage;
             String targetClientMessage;
+
             while ((clientMessage = in.readLine()) != null) {
                 if (clientMessage.equalsIgnoreCase("exit")) {
                     System.out.println("User " + userID + " (" + clientAddress + ") requested disconnect");
