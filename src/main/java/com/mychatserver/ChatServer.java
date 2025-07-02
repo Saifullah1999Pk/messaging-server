@@ -80,7 +80,7 @@ public class ChatServer {
     }
 
     public void start() throws IOException {
-        clientThreadPool = Executors.newFixedThreadPool(10);
+        clientThreadPool = Executors.newFixedThreadPool(1000);
         serverSocket = new ServerSocket(port);
         System.out.println("Chatserver started on port " + port);
         System.out.println("Waiting for clients.. ");
